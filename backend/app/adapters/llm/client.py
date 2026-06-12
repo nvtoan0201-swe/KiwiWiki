@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 from collections.abc import Callable, Sequence
 from typing import Any, TypeVar
@@ -79,6 +80,7 @@ class LLMClient:
         on_usage: UsageCallback | None = None,
         max_retries: int | None = None,
         backoff_base: float = 0.5,
+        max_concurrent: int | None = None,
     ) -> None:
         settings = get_settings()
         self._client = client if client is not None else self._build_client(settings)
@@ -86,6 +88,10 @@ class LLMClient:
         self._on_usage = on_usage
         self._max_retries = max_retries if max_retries is not None else settings.llm_max_retries
         self._backoff_base = backoff_base
+        # Backpressure: bound in-flight SDK calls (calls run in worker threads,
+        # so a thread-level semaphore is the correct primitive here).
+        limit = max_concurrent if max_concurrent is not None else settings.llm_max_concurrent
+        self._concurrency = threading.BoundedSemaphore(max(1, limit))
 
     @staticmethod
     def _build_client(settings: Any) -> anthropic.Anthropic:
@@ -119,7 +125,8 @@ class LLMClient:
                 }
                 if system is not None:
                     kwargs["system"] = system
-                response = self._client.messages.create(**kwargs)
+                with self._concurrency:
+                    response = self._client.messages.create(**kwargs)
                 self._account(response, prompt_version)
                 return _extract_text(response)
             except Exception as exc:  # noqa: BLE001 — classified below

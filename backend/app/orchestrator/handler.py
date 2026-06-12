@@ -10,6 +10,7 @@ output before redoing work, and call `checkpoint()` after durable steps.
 from __future__ import annotations
 
 import asyncio
+import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -26,6 +27,7 @@ from app.db.models import Escalation, Project, Run, StageExecution
 from app.events.publisher import EventPublisher
 from app.orchestrator.budget import BudgetGuard
 from app.services.audit import AuditService
+from app.services.trace import TraceService, llm_call_sink, new_sink
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -88,6 +90,7 @@ class StageContext:
         llm_factory: LLMFactory,
         escalation_response: dict[str, Any] | None = None,
         loop_back_context: dict[str, Any] | None = None,
+        trace: TraceService | None = None,
     ) -> None:
         self.session = session
         self.project = project
@@ -99,6 +102,7 @@ class StageContext:
         self.embeddings = embeddings
         self.escalation_response = escalation_response
         self.loop_back_context = loop_back_context or {}
+        self.trace = trace
         self._llm_factory = llm_factory
         self._llm: LLMClient | None = None
 
@@ -127,6 +131,10 @@ class StageContext:
     ) -> T:
         """Structured LLM call off the event loop, with usage charged to the budget."""
         llm = self.llm
+        sink = new_sink()
+        token = llm_call_sink.set(sink)
+        started = time.monotonic()
+        error: str | None = None
         try:
             return await asyncio.to_thread(
                 llm.complete_json,
@@ -136,7 +144,12 @@ class StageContext:
                 max_tokens=max_tokens,
                 prompt_version=prompt_version,
             )
+        except BaseException as exc:
+            error = str(exc)
+            raise
         finally:
+            llm_call_sink.reset(token)
+            self._trace_llm(prompt_version, note, sink, started, error)
             await self.budget.flush_llm_usage(note)
 
     async def llm_text(
@@ -149,6 +162,10 @@ class StageContext:
         note: str = "llm call",
     ) -> str:
         llm = self.llm
+        sink = new_sink()
+        token = llm_call_sink.set(sink)
+        started = time.monotonic()
+        error: str | None = None
         try:
             return await asyncio.to_thread(
                 llm.complete,
@@ -157,8 +174,32 @@ class StageContext:
                 max_tokens=max_tokens,
                 prompt_version=prompt_version,
             )
+        except BaseException as exc:
+            error = str(exc)
+            raise
         finally:
+            llm_call_sink.reset(token)
+            self._trace_llm(prompt_version, note, sink, started, error)
             await self.budget.flush_llm_usage(note)
+
+    def _trace_llm(
+        self,
+        prompt_version: str | None,
+        note: str,
+        sink: Any,
+        started: float,
+        error: str | None,
+    ) -> None:
+        if self.trace is None:
+            return
+        self.trace.record_llm_call(
+            stage=self.stage_execution.stage,
+            prompt_version=prompt_version,
+            note=note,
+            sink=sink,
+            duration_ms=(time.monotonic() - started) * 1000.0,
+            error=error,
+        )
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
         return await asyncio.to_thread(self.embeddings.embed, texts)

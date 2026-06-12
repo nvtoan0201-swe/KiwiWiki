@@ -7,9 +7,14 @@ moments. See [AGENT_DESIGN.MD](AGENT_DESIGN.MD) (screens) and
 
 ## Status
 
-First vertical slice: **Stage 0 — Scoping** works end-to-end.
-New Research → Claude restates the question & proposes a scope → Scope
-Confirmation → confirm. Later stages (search, analysis, …) build on this.
+All build phases (0–7) are complete: the full pipeline — scoping →
+literature search → paper analysis → comparative analysis → gap analysis →
+report → presentation — runs end to end with provenance, budgets,
+escalations, per-run tracing, an eval scorecard, and deployment artifacts.
+
+**Operations:** see [RUNBOOK.md](RUNBOOK.md) for clean-checkout setup, env
+vars, staging deploys (`docker-compose.prod.yml`), the post-deploy smoke test,
+how to read the audit log / run trace, threshold tuning, and on-call notes.
 
 ## Stack
 

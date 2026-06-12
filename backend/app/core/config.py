@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     agent_model: str = "claude-opus-4-8"
     llm_max_retries: int = 3
+    # Max in-flight Anthropic calls process-wide (backpressure; phase 7).
+    llm_max_concurrent: int = 4
 
     # --- Embeddings ----------------------------------------------------------
     embeddings_provider: str = "stub"  # concrete providers land in Phase 2
@@ -40,6 +42,11 @@ class Settings(BaseSettings):
     default_budget_search_calls: int = 500
     default_budget_papers_read: int = 100
     default_budget_seconds: int = 3600
+    # Hard global LLM token ceiling across ALL runs, independent of per-project
+    # budgets (phase 7 cost guardrail). 0 disables the global ceiling.
+    global_llm_token_ceiling: int = 50_000_000
+    # Max runs executing concurrently; further launches queue (phase 7).
+    max_concurrent_runs: int = 3
 
     # --- Orchestration (Phase 1) ----------------------------------------------
     # Max identical (from, to) loop-backs before the engine escalates instead.

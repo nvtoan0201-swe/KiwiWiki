@@ -32,15 +32,18 @@ class SourceRead(BaseModel):
 
 
 class SourceCreateManual(BaseModel):
-    """Body for `POST /projects/{id}/sources` — a user-supplied source."""
+    """Body for `POST /projects/{id}/sources` — a user-supplied source.
 
-    title: str = Field(..., min_length=3)
-    authors: list[str] | None = None
-    venue: str | None = None
-    year: int | None = None
-    doi: str | None = None
-    url: str | None = None
-    abstract: str | None = None
+    Size/type-checked at the boundary (phase 7 input safety): these fields
+    flow into prompts, exports, and dedup keys."""
+
+    title: str = Field(..., min_length=3, max_length=500)
+    authors: list[str] | None = Field(default=None, max_length=50)
+    venue: str | None = Field(default=None, max_length=300)
+    year: int | None = Field(default=None, ge=1000, le=2100)
+    doi: str | None = Field(default=None, max_length=300)
+    url: str | None = Field(default=None, max_length=2000)
+    abstract: str | None = Field(default=None, max_length=20_000)
 
 
 class SourceOverrideBody(BaseModel):

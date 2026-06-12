@@ -18,6 +18,7 @@ task, so the shared session stays safe.
 from __future__ import annotations
 
 import asyncio
+import time
 from dataclasses import dataclass
 from typing import cast
 
@@ -28,6 +29,7 @@ from app.core.config import get_settings
 from app.db.models import Source
 from app.orchestrator.handler import StageContext
 from app.schemas.analysis import DeepReadExtraction, SkimExtraction
+from app.services.trace import llm_call_sink, new_sink
 from app.stages.analysis.fetch import FetchedText
 
 DEEP_READ_PROMPT = "deep_read_v1"
@@ -81,7 +83,29 @@ async def extract_batch(
                 [{"role": "user", "content": prompt}], schema, prompt_version=version
             )
 
-        return cast(DeepReadExtraction | SkimExtraction, await asyncio.to_thread(call))
+        # Per-call token attribution for the trace; the sink is task-local, so
+        # concurrent extractions never cross-attribute (the session.add happens
+        # back on the handler task, keeping the shared session safe).
+        sink = new_sink()
+        token = llm_call_sink.set(sink)
+        started = time.monotonic()
+        error: str | None = None
+        try:
+            return cast(DeepReadExtraction | SkimExtraction, await asyncio.to_thread(call))
+        except BaseException as exc:
+            error = str(exc)
+            raise
+        finally:
+            llm_call_sink.reset(token)
+            if ctx.trace is not None:
+                ctx.trace.record_llm_call(
+                    stage=ctx.stage_execution.stage,
+                    prompt_version=version,
+                    note=f"extraction: {job.source.title[:60]}",
+                    sink=sink,
+                    duration_ms=(time.monotonic() - started) * 1000.0,
+                    error=error,
+                )
 
     try:
         return list(await asyncio.gather(*(one(job) for job in jobs)))

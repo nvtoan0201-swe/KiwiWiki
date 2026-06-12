@@ -56,3 +56,53 @@ class EscalationRead(BaseModel):
 
 class ResolveEscalationBody(BaseModel):
     user_response: dict[str, Any] = Field(..., min_length=1)
+
+
+# --- per-run trace (phase 7 part C, internal debugging endpoint) ---------------------
+
+
+class TraceStageSpan(BaseModel):
+    stage: str
+    status: str
+    started_at: datetime.datetime | None
+    ended_at: datetime.datetime | None
+    duration_seconds: float | None
+    loop_back_from: str | None
+    llm_calls: int
+    llm_tokens: int
+    source_calls: int
+
+
+class TraceEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    timestamp: datetime.datetime
+    stage: str | None
+    kind: str
+    duration_ms: float | None
+    payload: dict[str, Any] | None
+
+
+class TraceMetrics(BaseModel):
+    duration_seconds: float | None
+    llm_calls: int
+    llm_tokens_total: int
+    llm_tokens_by_stage: dict[str, int]
+    llm_calls_by_prompt_version: dict[str, int]
+    source_calls: int
+    source_calls_by_adapter: dict[str, int]
+    papers_read: float
+    search_calls: float
+    escalations: int
+    loop_backs: int
+    errors: int
+    budget_consumed: dict[str, Any] | None
+
+
+class RunTraceRead(BaseModel):
+    trace_id: str  # the run id — one trace per run
+    run: RunRead
+    stages: list[TraceStageSpan]
+    events: list[TraceEventRead]
+    metrics: TraceMetrics

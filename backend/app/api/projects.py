@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
 from app.schemas.common import Page
 from app.schemas.projects import ProjectCreate, ProjectRead, ProjectUpdate
+from app.services import exports
 from app.services.projects import ProjectService
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -53,3 +54,18 @@ async def update_project(
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(project_id: str, session: AsyncSession = Depends(get_session)) -> None:
     await ProjectService(session).archive(project_id)
+
+
+@router.get("/{project_id}/export")
+async def export_project_bundle(
+    project_id: str, session: AsyncSession = Depends(get_session)
+) -> Response:
+    """One-stop export: report + deck + source list + audit log as a zip
+    (phase 7 part D, data lifecycle)."""
+    project = await ProjectService(session).get(project_id)
+    data = await exports.project_bundle(session, project)
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="project-{project.id}-bundle.zip"'},
+    )

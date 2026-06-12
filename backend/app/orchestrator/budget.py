@@ -27,6 +27,7 @@ from app.core.errors import BudgetExceeded
 from app.db.models import BudgetLedgerEntry, Project, Run
 from app.events.publisher import EventPublisher
 from app.services.audit import AuditService
+from app.services.trace import llm_call_sink
 
 logger = logging.getLogger("app.budget")
 
@@ -147,6 +148,9 @@ class BudgetGuard:
         }
         await self._session.flush()
 
+        if category is BudgetCategory.llm_tokens:
+            await self._check_global_ceiling()
+
         ceiling = self._ceilings.get(category.value)
         await self._events.emit(
             "counter_update",
@@ -182,11 +186,61 @@ class BudgetGuard:
                 {"category": category.value, "total": new_total, "ceiling": ceiling},
             )
 
+    async def _check_global_ceiling(self) -> None:
+        """Hard global LLM spend ceiling across ALL runs (phase 7 cost
+        guardrail) — independent of any per-project budget. The crossing entry
+        is already in the ledger, so the spend that happened stays recorded."""
+        global_ceiling = float(get_settings().global_llm_token_ceiling)
+        if global_ceiling <= 0:
+            return
+        global_total = float(
+            await self._session.scalar(
+                select(func.sum(BudgetLedgerEntry.amount)).where(
+                    BudgetLedgerEntry.category == BudgetCategory.llm_tokens.value
+                )
+            )
+            or 0
+        )
+        if global_total < global_ceiling:
+            return
+        await self._audit.record(
+            project_id=self._project.id,
+            action_type=AuditActionType.budget_warning,
+            description=(
+                f"Global LLM token ceiling reached: {global_total:.0f}/{global_ceiling:.0f} "
+                "across all runs"
+            ),
+            reasoning=(
+                "The system-wide spend guardrail was hit; this run stops gracefully "
+                "regardless of its own project budget."
+            ),
+            payload={"scope": "global", "total": global_total, "ceiling": global_ceiling},
+            run_id=self._run.id,
+            stage=self._stage,
+        )
+        raise BudgetExceeded(
+            "Global LLM token ceiling reached",
+            {
+                "category": BudgetCategory.llm_tokens.value,
+                "scope": "global",
+                "total": global_total,
+                "ceiling": global_ceiling,
+            },
+        )
+
     # --- LLM token buffering -------------------------------------------------------
 
     def note_llm_usage(self, input_tokens: int, output_tokens: int, model: str) -> None:
         """Synchronous `on_usage` callback for the LLM wrapper."""
         self._pending_llm_tokens += input_tokens + output_tokens
+        # Exact per-call attribution for the run trace: the sink is set by the
+        # StageContext around each LLM call, in this call's own context.
+        sink = llm_call_sink.get()
+        if sink is not None:
+            sink["input_tokens"] += input_tokens
+            sink["output_tokens"] += output_tokens
+            sink["model"] = model
+            sink["sdk_calls"] += 1
 
     async def flush_llm_usage(self, note: str = "llm call") -> None:
         if self._pending_llm_tokens <= 0:

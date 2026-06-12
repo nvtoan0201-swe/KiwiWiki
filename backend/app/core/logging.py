@@ -20,6 +20,9 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 _request_id: ContextVar[str | None] = ContextVar("request_id", default=None)
+# Per-run trace context: bound by the run engine around each stage step so
+# every log line emitted inside a stage carries its run id and stage.
+_run_context: ContextVar[dict[str, str] | None] = ContextVar("run_context", default=None)
 
 
 class JsonFormatter(logging.Formatter):
@@ -32,6 +35,9 @@ class JsonFormatter(logging.Formatter):
         rid = _request_id.get()
         if rid is not None:
             payload["request_id"] = rid
+        run_ctx = _run_context.get()
+        if run_ctx is not None:
+            payload.update(run_ctx)
         if record.exc_info:
             payload["exc_info"] = self.formatException(record.exc_info)
         # Allow callers to attach structured fields via logger.info(..., extra={"extra": {...}}).
@@ -51,6 +57,15 @@ def configure_logging(level: str = "INFO") -> None:
 
 def current_request_id() -> str | None:
     return _request_id.get()
+
+
+def bind_run_context(run_id: str, stage: str) -> object:
+    """Bind a run/stage to all log lines until `reset_run_context(token)`."""
+    return _run_context.set({"run_id": run_id, "stage": stage})
+
+
+def reset_run_context(token: object) -> None:
+    _run_context.reset(token)  # type: ignore[arg-type]
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):

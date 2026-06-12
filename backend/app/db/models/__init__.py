@@ -15,6 +15,7 @@ from app.db.models.reports import Report
 from app.db.models.runs import Run
 from app.db.models.sources import Source
 from app.db.models.stage_executions import StageExecution
+from app.db.models.trace_events import TraceEvent
 
 __all__ = [
     "AuditLogEntry",
@@ -32,4 +33,5 @@ __all__ = [
     "Run",
     "Source",
     "StageExecution",
+    "TraceEvent",
 ]

@@ -1,14 +1,25 @@
-"""Run lifecycle + escalation REST endpoints (Phase 1)."""
+"""Run lifecycle + escalation REST endpoints (Phase 1) and the per-run trace
+(Phase 7 part C)."""
 
 from __future__ import annotations
 
+import datetime
+
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import BudgetCategory, ProjectStatus
+from app.core.constants import AuditActionType, BudgetCategory, ProjectStatus
 from app.core.errors import NotFound, ValidationError
-from app.db.models import Escalation, Project, Run
+from app.db.models import (
+    AuditLogEntry,
+    BudgetLedgerEntry,
+    Escalation,
+    Project,
+    Run,
+    StageExecution,
+    TraceEvent,
+)
 from app.db.session import get_session
 from app.orchestrator.escalation import resolve_escalation
 from app.orchestrator.runner import RunEngine, get_run_engine
@@ -18,7 +29,11 @@ from app.schemas.runs import (
     ResolveEscalationBody,
     RunRead,
     RunStartResponse,
+    RunTraceRead,
     StopRunBody,
+    TraceEventRead,
+    TraceMetrics,
+    TraceStageSpan,
 )
 
 router = APIRouter(tags=["runs"])
@@ -143,3 +158,129 @@ async def _read_run(engine: RunEngine, run_id: str) -> RunRead:
         if run is None:
             raise NotFound(f"Run {run_id} not found")
         return RunRead.model_validate(run)
+
+
+# --- per-run trace ---------------------------------------------------------------------
+
+
+def _aware(value: datetime.datetime | None) -> datetime.datetime | None:
+    """SQLite returns naive datetimes; compare consistently in UTC."""
+    if value is None:
+        return None
+    return value if value.tzinfo is not None else value.replace(tzinfo=datetime.UTC)
+
+
+def _span(execution: StageExecution, events: list[TraceEvent]) -> TraceStageSpan:
+    start = _aware(execution.started_at)
+    end = _aware(execution.ended_at)
+    window = [
+        e
+        for e in events
+        if e.stage == execution.stage
+        and (start is None or (_aware(e.timestamp) or start) >= start)
+        and (end is None or (_aware(e.timestamp) or end) <= end)
+    ]
+    llm = [e for e in window if e.kind == "llm_call"]
+    tokens = sum(
+        int((e.payload or {}).get("input_tokens", 0))
+        + int((e.payload or {}).get("output_tokens", 0))
+        for e in llm
+    )
+    return TraceStageSpan(
+        stage=execution.stage,
+        status=execution.status,
+        started_at=execution.started_at,
+        ended_at=execution.ended_at,
+        duration_seconds=(end - start).total_seconds() if start and end else None,
+        loop_back_from=execution.loop_back_from,
+        llm_calls=len(llm),
+        llm_tokens=tokens,
+        source_calls=sum(1 for e in window if e.kind == "source_call"),
+    )
+
+
+@router.get("/runs/{run_id}/trace", response_model=RunTraceRead)
+async def get_run_trace(run_id: str, session: AsyncSession = Depends(get_session)) -> RunTraceRead:
+    """Internal debugging view: the run's stage spans, every LLM call (model,
+    prompt version, exact tokens, duration) and source call, plus run metrics."""
+    run = await session.get(Run, run_id)
+    if run is None:
+        raise NotFound(f"Run {run_id} not found")
+
+    executions = list(
+        (
+            await session.execute(
+                select(StageExecution)
+                .where(StageExecution.run_id == run_id)
+                .order_by(StageExecution.started_at)
+            )
+        ).scalars()
+    )
+    events = list(
+        (
+            await session.execute(
+                select(TraceEvent).where(TraceEvent.run_id == run_id).order_by(TraceEvent.timestamp)
+            )
+        ).scalars()
+    )
+
+    ledger_totals = {
+        category: float(total or 0)
+        for category, total in (
+            await session.execute(
+                select(BudgetLedgerEntry.category, func.sum(BudgetLedgerEntry.amount))
+                .where(BudgetLedgerEntry.run_id == run_id)
+                .group_by(BudgetLedgerEntry.category)
+            )
+        ).all()
+    }
+    audit_counts = {
+        action: int(count)
+        for action, count in (
+            await session.execute(
+                select(AuditLogEntry.action_type, func.count())
+                .where(AuditLogEntry.run_id == run_id)
+                .group_by(AuditLogEntry.action_type)
+            )
+        ).all()
+    }
+
+    llm_events = [e for e in events if e.kind == "llm_call"]
+    source_events = [e for e in events if e.kind == "source_call"]
+    tokens_by_stage: dict[str, int] = {}
+    calls_by_prompt: dict[str, int] = {}
+    for event in llm_events:
+        payload = event.payload or {}
+        tokens = int(payload.get("input_tokens", 0)) + int(payload.get("output_tokens", 0))
+        stage_key = event.stage or "unknown"
+        tokens_by_stage[stage_key] = tokens_by_stage.get(stage_key, 0) + tokens
+        prompt = str(payload.get("prompt_version") or "unversioned")
+        calls_by_prompt[prompt] = calls_by_prompt.get(prompt, 0) + 1
+    calls_by_adapter: dict[str, int] = {}
+    for event in source_events:
+        adapter = str((event.payload or {}).get("adapter") or "unknown")
+        calls_by_adapter[adapter] = calls_by_adapter.get(adapter, 0) + 1
+
+    started, ended = _aware(run.started_at), _aware(run.ended_at)
+    metrics = TraceMetrics(
+        duration_seconds=(ended - started).total_seconds() if started and ended else None,
+        llm_calls=len(llm_events),
+        llm_tokens_total=sum(tokens_by_stage.values()),
+        llm_tokens_by_stage=tokens_by_stage,
+        llm_calls_by_prompt_version=calls_by_prompt,
+        source_calls=len(source_events),
+        source_calls_by_adapter=calls_by_adapter,
+        papers_read=ledger_totals.get("papers_read", 0.0),
+        search_calls=ledger_totals.get("search_calls", 0.0),
+        escalations=audit_counts.get(AuditActionType.escalation_raised.value, 0),
+        loop_backs=audit_counts.get(AuditActionType.loop_back.value, 0),
+        errors=audit_counts.get(AuditActionType.error.value, 0),
+        budget_consumed=run.budget_consumed,
+    )
+    return RunTraceRead(
+        trace_id=run_id,
+        run=RunRead.model_validate(run),
+        stages=[_span(e, events) for e in executions],
+        events=[TraceEventRead.model_validate(e) for e in events],
+        metrics=metrics,
+    )

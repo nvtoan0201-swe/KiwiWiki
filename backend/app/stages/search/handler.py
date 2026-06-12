@@ -33,12 +33,21 @@ from app.core.constants import (
     AuditActionType,
     BudgetCategory,
     DiscoveryChannel,
+    EscalationTrigger,
     Stage,
+    StoppingCriterion,
     TriageStatus,
 )
 from app.core.errors import BudgetExceeded
 from app.db.models import Source
-from app.orchestrator.handler import Advance, StageContext, StageHandler, StageResult
+from app.orchestrator.handler import (
+    Advance,
+    Complete,
+    Escalate,
+    StageContext,
+    StageHandler,
+    StageResult,
+)
 from app.schemas.search import (
     DiversityJudgment,
     ReformulatedQueries,
@@ -51,8 +60,9 @@ from app.stages.search.triage import TRIAGED_IN, triage_sources
 
 SEED_PROMPT = "seed_queries_v1"
 REFORMULATE_PROMPT = "reformulate_v1"
-SATURATION_PROMPT = "saturation_judge_v1"
-DIVERSITY_PROMPT = "diversity_check_v1"
+# v2 of these two fence fetched paper text as data-only (phase 7 input safety).
+SATURATION_PROMPT = "saturation_judge_v2"
+DIVERSITY_PROMPT = "diversity_check_v2"
 
 
 def _default_adapters() -> list[SourceAdapter]:
@@ -83,11 +93,14 @@ class LiteratureSearchHandler(StageHandler):
     def __init__(self, adapters: list[SourceAdapter] | None = None) -> None:
         self._adapters = adapters
 
-    def _router(self, ctx: StageContext) -> SourceRouter:
-        adapters = self._adapters if self._adapters is not None else _default_adapters()
+    def _adapter_list(self) -> list[SourceAdapter]:
+        return self._adapters if self._adapters is not None else _default_adapters()
 
+    def _router(self, ctx: StageContext, adapters: list[SourceAdapter]) -> SourceRouter:
         async def charge(amount: int, note: str) -> None:
             await ctx.budget.charge(BudgetCategory.search_calls, amount, note)
+            if ctx.trace is not None:
+                ctx.trace.record_source_note(stage=self.stage.value, note=note)
 
         return SourceRouter(adapters, charge=charge)
 
@@ -95,20 +108,35 @@ class LiteratureSearchHandler(StageHandler):
         research_question = ctx.project.research_question or ctx.project.original_request
         state = (ctx.stage_execution.summary or {}).get("search_state") or _fresh_state()
 
+        # Re-entry after the all-sources-down escalation: the user chose to
+        # stop, or to retry (in which case the loop just continues below).
+        response = ctx.escalation_response or {}
+        if response.get("selected_option") == "stop":
+            state["stopped_on"] = "source_outage"
+            return Complete(
+                stopping_criterion=StoppingCriterion.user_stopped,
+                summary=self._summary(ctx, state, partial=True),
+            )
+
         # A loop-back from a later stage may carry new seed terms.
         injected = ctx.loop_back_context.get("queries") or ctx.loop_back_context.get("new_terms")
         if injected and not state["next_queries"]:
             state["next_queries"] = list(injected)
 
-        router = self._router(ctx)
+        adapters = self._adapter_list()
+        router = self._router(ctx, adapters)
         try:
-            await self._search_loop(ctx, router, research_question, state)
+            outage = await self._search_loop(
+                ctx, router, research_question, state, adapter_count=len(adapters)
+            )
         except BudgetExceeded:
             # Graceful: persist honest state; the runner turns this into a
             # budget stop. Coverage is thin and the summary says so.
             state["stopped_on"] = "budget"
             ctx.stage_execution.summary = self._summary(ctx, state, partial=True)
             raise
+        if outage is not None:
+            return outage
 
         return Advance(summary=await self._final_summary(ctx, state))
 
@@ -120,7 +148,11 @@ class LiteratureSearchHandler(StageHandler):
         router: SourceRouter,
         research_question: str,
         state: dict[str, Any],
-    ) -> None:
+        *,
+        adapter_count: int,
+    ) -> Escalate | None:
+        """Run the search iterations. Returns an `Escalate` when every source
+        adapter is down (the run pauses for the user), else None."""
         settings = get_settings()
         while len(state["iterations"]) < settings.search_iteration_cap:
             iteration_no = len(state["iterations"]) + 1
@@ -147,6 +179,43 @@ class LiteratureSearchHandler(StageHandler):
             existing_vectors = await self._existing_embeddings(ctx.session, ctx.project.id)
 
             merged, failed = await self._run_queries(router, queries)
+            if failed:
+                # One adapter down → continue on the others, on the record.
+                await ctx.audit.record(
+                    project_id=ctx.project.id,
+                    action_type=AuditActionType.error,
+                    description=(
+                        f"Source adapter outage: {', '.join(sorted(failed))} "
+                        f"({len(failed)}/{adapter_count} adapters failed)"
+                    ),
+                    reasoning=(
+                        "All source adapters are unreachable; the search cannot continue."
+                        if len(failed) >= adapter_count
+                        else "The search continued on the remaining adapters."
+                    ),
+                    payload={"failed_adapters": failed, "iteration": iteration_no},
+                    run_id=ctx.run.id,
+                    stage=self.stage.value,
+                )
+            if len(failed) >= adapter_count and not merged:
+                # Every source is down: do not fabricate a "saturated" stop from
+                # empty results — pause and ask. Re-running these queries on
+                # retry is the resume path, so put them back first.
+                state["next_queries"] = queries
+                await ctx.checkpoint(self._summary(ctx, state, partial=True))
+                return Escalate(
+                    trigger=EscalationTrigger.thin_literature,
+                    question=(
+                        "All literature sources are currently unreachable "
+                        f"({', '.join(sorted(failed))}). The search cannot proceed. "
+                        "Retry now, or stop the run?"
+                    ),
+                    context={"failed_adapters": failed, "iteration": iteration_no},
+                    options=[
+                        {"id": "retry", "label": "Retry the search now"},
+                        {"id": "stop", "label": "Stop the run"},
+                    ],
+                )
             new_sources, duplicates = await self._merge_into_db(
                 ctx, merged, DiscoveryChannel.keyword_search
             )
@@ -223,7 +292,7 @@ class LiteratureSearchHandler(StageHandler):
 
             if sat_state == sat.STATE_SATURATED:
                 state["stopped_on"] = "saturation"
-                return
+                return None
 
             # Plan the next iteration's queries (unless diversity already did,
             # or the cap means there is no next iteration).
@@ -235,6 +304,7 @@ class LiteratureSearchHandler(StageHandler):
 
         if state["stopped_on"] is None:
             state["stopped_on"] = "iteration_cap"
+        return None
 
     # --- query generation -----------------------------------------------------------
 

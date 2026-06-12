@@ -11,7 +11,8 @@ from app.db.models import Source
 from app.orchestrator.handler import StageContext
 from app.schemas.search import RelevanceBatch
 
-PROMPT_VERSION = "relevance_triage_v1"
+# v2 fences the paper list as data-only (phase 7 input-safety hardening).
+PROMPT_VERSION = "relevance_triage_v2"
 _BATCH_SIZE = 20
 
 TRIAGED_IN = {TriageStatus.deep_read.value, TriageStatus.skimmed.value}

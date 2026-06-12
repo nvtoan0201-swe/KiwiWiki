@@ -1,0 +1,93 @@
+# Production / staging stack (phase 7 part E).
+#
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Expects managed Postgres (with pgvector) and Redis: set DATABASE_URL and
+# REDIS_URL in the environment / secret store — never in this file. For a
+# staging environment without managed services, enable the bundled ones:
+#
+#   docker compose -f docker-compose.prod.yml --profile bundled up -d
+#
+# Deploy order is enforced in-stack: `migrate` runs `alembic upgrade head`
+# (retrying until the database accepts connections) and the API only starts
+# after it succeeds; the API's own healthcheck gates readiness.
+
+services:
+  migrate:
+    build: ./backend
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/research_agent}
+    # Retry loop instead of depends_on, so the same service works against
+    # managed databases and the bundled staging one.
+    command: >
+      sh -c 'for i in $$(seq 1 30); do
+               python -m alembic upgrade head && exit 0;
+               echo "migrate: database not ready, retrying ($$i/30)"; sleep 2;
+             done; exit 1'
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-staging}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/research_agent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY in the environment}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Cost guardrails / backpressure (phase 7) — override per environment.
+      GLOBAL_LLM_TOKEN_CEILING: ${GLOBAL_LLM_TOKEN_CEILING:-50000000}
+      MAX_CONCURRENT_RUNS: ${MAX_CONCURRENT_RUNS:-3}
+      LLM_MAX_CONCURRENT: ${LLM_MAX_CONCURRENT:-4}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # Exactly one uvicorn worker: runs execute as in-process background tasks
+    # owned by this process (see RUNBOOK — scaling workers separately is the
+    # arq seam, not yet wired). Scale vertically or queue via MAX_CONCURRENT_RUNS.
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys,json; body=json.load(urllib.request.urlopen('http://localhost:8000/health', timeout=5)); sys.exit(0 if body.get('status')=='ok' else 1)",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # --- bundled staging infrastructure (profile: bundled) ----------------------
+  db:
+    profiles: ["bundled"]
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: research_agent
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d research_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    profiles: ["bundled"]
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata_prod:

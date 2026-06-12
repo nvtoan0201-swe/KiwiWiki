@@ -32,6 +32,7 @@ from app.core.constants import (
     StoppingCriterion,
 )
 from app.core.errors import AppError, BudgetExceeded, NotFound, ValidationError
+from app.core.logging import bind_run_context, reset_run_context
 from app.db.models import Project, Run, StageExecution
 from app.db.session import get_sessionmaker
 from app.events.bus import EventBus, get_event_bus
@@ -51,6 +52,7 @@ from app.orchestrator.handler import (
 )
 from app.orchestrator.registry import StageRegistry
 from app.services.audit import AuditService
+from app.services.trace import TraceService
 
 logger = logging.getLogger("app.orchestrator")
 
@@ -84,6 +86,7 @@ class RunEngine:
         llm_factory: LLMFactory | None = None,
         embeddings: EmbeddingsClient | None = None,
         loop_back_max: int | None = None,
+        max_concurrent_runs: int | None = None,
     ) -> None:
         self._sessionmaker = sessionmaker
         self._registry = registry
@@ -92,6 +95,10 @@ class RunEngine:
         self._embeddings = embeddings or EmbeddingsClient()
         settings = get_settings()
         self._loop_back_max = loop_back_max if loop_back_max is not None else settings.loop_back_max
+        self._max_concurrent_runs = (
+            max_concurrent_runs if max_concurrent_runs is not None else settings.max_concurrent_runs
+        )
+        self._run_slots: asyncio.Semaphore | None = None
         self._tasks: dict[str, asyncio.Task[None]] = {}
 
     # --- collaborators (resolved lazily so tests can construct cheaply) -----------
@@ -140,13 +147,21 @@ class RunEngine:
         return run_id
 
     def launch(self, run_id: str) -> asyncio.Task[None]:
-        """Run `execute` as an in-process background task."""
+        """Run `execute` as an in-process background task. Launches beyond the
+        concurrency cap queue on a semaphore, so one project's runs cannot
+        starve the rest of the system (backpressure, phase 7)."""
         existing = self._tasks.get(run_id)
         if existing is not None and not existing.done():
             return existing
-        task = asyncio.create_task(self.execute(run_id), name=f"run:{run_id}")
+        task = asyncio.create_task(self._execute_queued(run_id), name=f"run:{run_id}")
         self._tasks[run_id] = task
         return task
+
+    async def _execute_queued(self, run_id: str) -> None:
+        if self._run_slots is None:
+            self._run_slots = asyncio.Semaphore(max(1, self._max_concurrent_runs))
+        async with self._run_slots:
+            await self.execute(run_id)
 
     async def join(self, run_id: str) -> None:
         """Wait for a launched run to settle (tests and graceful shutdown)."""
@@ -258,9 +273,11 @@ class RunEngine:
                 llm_factory=self._llm_factory,
                 escalation_response=resolved.user_response if resolved else None,
                 loop_back_context=(execution.summary or {}).get("_loop_back_context"),
+                trace=TraceService(session, run.id),
             )
 
             stage_started = _utcnow()
+            log_token = bind_run_context(run.id, stage.value)
             try:
                 handler = self._get_registry().get(stage)
                 result: StageResult = await handler.run(ctx)
@@ -276,6 +293,8 @@ class RunEngine:
             except Exception as exc:  # noqa: BLE001 — a handler bug fails the run, not the API
                 logger.exception("stage handler crashed", extra={"extra": {"stage": stage.value}})
                 result = Fail(str(exc))
+            finally:
+                reset_run_context(log_token)
 
             # Wall-clock spent inside the handler counts against the time budget.
             elapsed = (_utcnow() - stage_started).total_seconds()

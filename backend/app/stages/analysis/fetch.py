@@ -70,4 +70,10 @@ async def fetch_text(ctx: StageContext, source: Source, adapters_by_name: dict) 
     metadata = dict(source.raw_metadata or {})
     metadata["text_available"] = availability
     source.raw_metadata = metadata
+    if ctx.trace is not None:
+        ctx.trace.record_fetch(
+            stage=ctx.stage_execution.stage,
+            source_title=source.title,
+            availability=availability,
+        )
     return FetchedText(text=text, text_available=availability)
