@@ -7,15 +7,9 @@ import { Component, type ReactNode } from "react";
 import type { ConfidenceLabel, ProjectStatus, Stage } from "../api/types";
 import { STAGE_LABELS, STAGES } from "../api/types";
 import { Badge, Icon, type BadgeTone } from "./ds";
+import { CONFIDENCE_META } from "./helpers";
 
 // ---------- ConfidenceBadge ----------
-
-export const CONFIDENCE_META: Record<ConfidenceLabel, { label: string; tone: BadgeTone; icon: string }> = {
-  well_established: { label: "Well established", tone: "positive", icon: "check-check" },
-  emerging: { label: "Emerging", tone: "info", icon: "trending-up" },
-  contested: { label: "Contested", tone: "warning", icon: "git-compare" },
-  speculative: { label: "Speculative", tone: "neutral", icon: "lightbulb" },
-};
 
 export function ConfidenceBadge({ label }: { label: ConfidenceLabel | null | undefined }) {
   if (!label || !(label in CONFIDENCE_META)) return null;
@@ -113,7 +107,11 @@ export function BudgetMeter({ budget, consumed }: BudgetMeterProps) {
           <div key={cat} className="budget-meter__row">
             <span className="budget-meter__label">{BUDGET_LABELS[cat]}</span>
             <span className="budget-meter__track">
-              <span className="budget-meter__fill" data-level={level} style={{ width: `${frac * 100}%` }} />
+              <span
+                className="budget-meter__fill"
+                data-level={level}
+                style={{ width: `${frac * 100}%` }}
+              />
             </span>
             <span className="budget-meter__nums">
               {Intl.NumberFormat().format(used)}
@@ -171,7 +169,10 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBound
           <h3 className="empty-state__title">Something went wrong</h3>
           <div className="empty-state__body">
             <p>{this.state.error.message}</p>
-            <button className="kw-btn kw-btn--secondary kw-btn--sm" onClick={() => this.setState({ error: null })}>
+            <button
+              className="kw-btn kw-btn--secondary kw-btn--sm"
+              onClick={() => this.setState({ error: null })}
+            >
               Try again
             </button>
           </div>
@@ -180,22 +181,4 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBound
     }
     return this.props.children;
   }
-}
-
-// ---------- Small helpers ----------
-
-export function formatWhen(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  const diff = Date.now() - date.getTime();
-  if (diff < 60_000) return "just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return date.toLocaleDateString();
-}
-
-export function authorsLine(authors: string[] | null): string {
-  if (!authors || authors.length === 0) return "Unknown authors";
-  if (authors.length <= 3) return authors.join(", ");
-  return `${authors[0]} et al.`;
 }

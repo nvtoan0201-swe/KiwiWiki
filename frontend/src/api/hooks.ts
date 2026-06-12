@@ -1,11 +1,6 @@
 // TanStack Query hooks — one per resource (phase 6 foundation contract).
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseQueryResult,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 
 import { api } from "./client";
 import type {
@@ -45,8 +40,7 @@ export const keys = {
   reports: (projectId: string) => ["projects", projectId, "reports"] as const,
   report: (reportId: string) => ["reports", reportId] as const,
   presentations: (projectId: string) => ["projects", projectId, "presentations"] as const,
-  audit: (projectId: string, offset: number) =>
-    ["projects", projectId, "audit", offset] as const,
+  audit: (projectId: string, offset: number) => ["projects", projectId, "audit", offset] as const,
 };
 
 export function useProjects(): UseQueryResult<Page<Project>> {
@@ -153,9 +147,7 @@ export function useReport(reportId: string | undefined): UseQueryResult<Report> 
   });
 }
 
-export function usePresentation(
-  projectId: string | undefined,
-): UseQueryResult<Presentation[]> {
+export function usePresentation(projectId: string | undefined): UseQueryResult<Presentation[]> {
   return useQuery({
     queryKey: keys.presentations(projectId ?? ""),
     queryFn: () => api.listPresentations(projectId!),
@@ -217,10 +209,17 @@ export function useRunControl(projectId: string) {
     qc.invalidateQueries({ queryKey: keys.runs(projectId) });
     qc.invalidateQueries({ queryKey: keys.project(projectId) });
   };
-  const pause = useMutation({ mutationFn: (runId: string) => api.pauseRun(runId), onSuccess: invalidate });
-  const resume = useMutation({ mutationFn: (runId: string) => api.resumeRun(runId), onSuccess: invalidate });
+  const pause = useMutation({
+    mutationFn: (runId: string) => api.pauseRun(runId),
+    onSuccess: invalidate,
+  });
+  const resume = useMutation({
+    mutationFn: (runId: string) => api.resumeRun(runId),
+    onSuccess: invalidate,
+  });
   const stop = useMutation({
-    mutationFn: ({ runId, reason }: { runId: string; reason?: string }) => api.stopRun(runId, reason),
+    mutationFn: ({ runId, reason }: { runId: string; reason?: string }) =>
+      api.stopRun(runId, reason),
     onSuccess: invalidate,
   });
   const adjustBudget = useMutation({
@@ -234,8 +233,13 @@ export function useRunControl(projectId: string) {
 export function useResolveEscalation(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ escalationId, response }: { escalationId: string; response: Record<string, unknown> }) =>
-      api.resolveEscalation(escalationId, response),
+    mutationFn: ({
+      escalationId,
+      response,
+    }: {
+      escalationId: string;
+      response: Record<string, unknown>;
+    }) => api.resolveEscalation(escalationId, response),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects", projectId] });
     },

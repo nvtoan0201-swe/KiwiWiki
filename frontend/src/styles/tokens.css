@@ -9,48 +9,48 @@
 
 :root {
   /* ---- Paper (warm light neutrals) ---- */
-  --paper-0: #FFFFFF;   /* pure white — cards that need to lift */
-  --paper-1: #FCFBF6;   /* default card surface */
-  --paper-2: #F6F2E9;   /* page background */
-  --paper-3: #EFEADB;   /* sunken / track / hover wash */
-  --paper-4: #E6DECB;   /* strong fill / pressed wash */
+  --paper-0: #ffffff; /* pure white — cards that need to lift */
+  --paper-1: #fcfbf6; /* default card surface */
+  --paper-2: #f6f2e9; /* page background */
+  --paper-3: #efeadb; /* sunken / track / hover wash */
+  --paper-4: #e6decb; /* strong fill / pressed wash */
 
   /* ---- Ink (warm dark neutrals) ---- */
-  --ink-0: #17150F;     /* primary text, near-black */
-  --ink-1: #2A2820;     /* headings on paper */
-  --ink-2: #4C4839;     /* secondary text */
-  --ink-3: #726C59;     /* muted text / captions */
-  --ink-4: #9A927C;     /* faint text / placeholders */
-  --ink-5: #BCB4A0;     /* disabled */
+  --ink-0: #17150f; /* primary text, near-black */
+  --ink-1: #2a2820; /* headings on paper */
+  --ink-2: #4c4839; /* secondary text */
+  --ink-3: #726c59; /* muted text / captions */
+  --ink-4: #9a927c; /* faint text / placeholders */
+  --ink-5: #bcb4a0; /* disabled */
 
   /* ---- Hairlines ---- */
-  --line-1: #E4DECE;    /* default hairline border */
-  --line-2: #D6CFBB;    /* stronger divider */
-  --line-3: #C7BFA8;    /* heavy / focus-adjacent */
+  --line-1: #e4dece; /* default hairline border */
+  --line-2: #d6cfbb; /* stronger divider */
+  --line-3: #c7bfa8; /* heavy / focus-adjacent */
 
   /* ---- Kiwi (botanical green accent) ---- */
-  --kiwi-0: #16412B;    /* deepest — pressed / text on tint */
-  --kiwi-1: #1F5A39;    /* deep */
-  --kiwi-2: #2C7349;    /* PRIMARY accent */
-  --kiwi-3: #469A66;    /* bright / hover-light */
-  --kiwi-4: #BFDCC6;    /* tint border */
-  --kiwi-5: #DCEBDD;    /* tint surface */
-  --kiwi-6: #EDF4ED;    /* faintest tint wash */
+  --kiwi-0: #16412b; /* deepest — pressed / text on tint */
+  --kiwi-1: #1f5a39; /* deep */
+  --kiwi-2: #2c7349; /* PRIMARY accent */
+  --kiwi-3: #469a66; /* bright / hover-light */
+  --kiwi-4: #bfdcc6; /* tint border */
+  --kiwi-5: #dcebdd; /* tint surface */
+  --kiwi-6: #edf4ed; /* faintest tint wash */
 
   /* ---- Seed (warm secondary tint — kiwi flesh / highlight) ---- */
-  --seed-1: #8A6A1E;    /* ochre ink — highlights, "saved" */
-  --seed-2: #B98E2E;
-  --seed-3: #F2E6C4;    /* ochre tint surface */
+  --seed-1: #8a6a1e; /* ochre ink — highlights, "saved" */
+  --seed-2: #b98e2e;
+  --seed-3: #f2e6c4; /* ochre tint surface */
 
   /* ---- Status (muted to fit palette) ---- */
-  --positive: #2C7349;
-  --positive-surface: #DCEBDD;
-  --warning: #9A6B1F;
-  --warning-surface: #F4E8CE;
-  --danger: #9B3A2E;
-  --danger-surface: #F2DAD3;
-  --info: #355E7A;
-  --info-surface: #D9E6EE;
+  --positive: #2c7349;
+  --positive-surface: #dcebdd;
+  --warning: #9a6b1f;
+  --warning-surface: #f4e8ce;
+  --danger: #9b3a2e;
+  --danger-surface: #f2dad3;
+  --info: #355e7a;
+  --info-surface: #d9e6ee;
 
   /* ===========================================================
      SEMANTIC ALIASES — use these in components & layouts
@@ -64,8 +64,8 @@
   --text-faint: var(--ink-4);
   --text-disabled: var(--ink-5);
   --text-accent: var(--kiwi-2);
-  --text-on-accent: #FCFBF6;
-  --text-on-dark: #F3EFE4;
+  --text-on-accent: #fcfbf6;
+  --text-on-dark: #f3efe4;
 
   /* Surfaces */
   --surface-page: var(--paper-2);
@@ -88,7 +88,7 @@
   --accent: var(--kiwi-2);
   --accent-hover: var(--kiwi-1);
   --accent-pressed: var(--kiwi-0);
-  --accent-contrast: #FCFBF6;
+  --accent-contrast: #fcfbf6;
 
   /* Focus ring */
   --focus-ring: color-mix(in srgb, var(--kiwi-2) 45%, transparent);
@@ -103,42 +103,42 @@
 
 :root {
   /* ---- Families ---- */
-  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-sans:  'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* ---- Type scale (editorial, 1.25 major-third-ish) ---- */
-  --text-display: 4.25rem;   /* 68 — hero serif */
-  --text-h1:      3rem;      /* 48 */
-  --text-h2:      2.25rem;   /* 36 */
-  --text-h3:      1.625rem;  /* 26 */
-  --text-h4:      1.25rem;   /* 20 */
-  --text-title:   1.125rem;  /* 18 — card / section title */
-  --text-lead:    1.1875rem; /* 19 — article lead body */
-  --text-body:    1rem;      /* 16 */
-  --text-sm:      0.875rem;  /* 14 — UI default */
-  --text-xs:      0.75rem;   /* 12 — labels / captions */
+  --text-display: 4.25rem; /* 68 — hero serif */
+  --text-h1: 3rem; /* 48 */
+  --text-h2: 2.25rem; /* 36 */
+  --text-h3: 1.625rem; /* 26 */
+  --text-h4: 1.25rem; /* 20 */
+  --text-title: 1.125rem; /* 18 — card / section title */
+  --text-lead: 1.1875rem; /* 19 — article lead body */
+  --text-body: 1rem; /* 16 */
+  --text-sm: 0.875rem; /* 14 — UI default */
+  --text-xs: 0.75rem; /* 12 — labels / captions */
   --text-mono-sm: 0.8125rem; /* 13 — metadata / citation */
   --text-mono-xs: 0.6875rem; /* 11 — chips / source IDs */
 
   /* ---- Weights ---- */
-  --weight-regular:  400;
-  --weight-medium:   500;
+  --weight-regular: 400;
+  --weight-medium: 500;
   --weight-semibold: 600;
-  --weight-bold:     700;
+  --weight-bold: 700;
 
   /* ---- Line heights ---- */
-  --leading-tight:   1.08;  /* display headlines */
-  --leading-snug:    1.22;  /* headings */
-  --leading-normal:  1.5;   /* UI body */
-  --leading-relaxed: 1.7;   /* long-form reading */
+  --leading-tight: 1.08; /* display headlines */
+  --leading-snug: 1.22; /* headings */
+  --leading-normal: 1.5; /* UI body */
+  --leading-relaxed: 1.7; /* long-form reading */
 
   /* ---- Letter spacing ---- */
-  --tracking-tight:   -0.02em;  /* large serif display */
-  --tracking-snug:    -0.01em;  /* headings */
-  --tracking-normal:  0;
-  --tracking-wide:    0.04em;   /* small-caps labels */
-  --tracking-wider:   0.12em;   /* eyebrow / mono labels */
+  --tracking-tight: -0.02em; /* large serif display */
+  --tracking-snug: -0.01em; /* headings */
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em; /* small-caps labels */
+  --tracking-wider: 0.12em; /* eyebrow / mono labels */
 }
 /* ============================================================
    KiwiWiki — Spacing & layout
@@ -148,22 +148,22 @@
    ============================================================ */
 
 :root {
-  --space-0:  0;
-  --space-1:  0.25rem;  /* 4  */
-  --space-2:  0.5rem;   /* 8  */
-  --space-3:  0.75rem;  /* 12 */
-  --space-4:  1rem;     /* 16 */
-  --space-5:  1.5rem;   /* 24 */
-  --space-6:  2rem;     /* 32 */
-  --space-7:  2.5rem;   /* 40 */
-  --space-8:  3rem;     /* 48 */
-  --space-9:  4rem;     /* 64 */
-  --space-10: 5rem;     /* 80 */
-  --space-12: 6rem;     /* 96 */
+  --space-0: 0;
+  --space-1: 0.25rem; /* 4  */
+  --space-2: 0.5rem; /* 8  */
+  --space-3: 0.75rem; /* 12 */
+  --space-4: 1rem; /* 16 */
+  --space-5: 1.5rem; /* 24 */
+  --space-6: 2rem; /* 32 */
+  --space-7: 2.5rem; /* 40 */
+  --space-8: 3rem; /* 48 */
+  --space-9: 4rem; /* 64 */
+  --space-10: 5rem; /* 80 */
+  --space-12: 6rem; /* 96 */
 
   /* ---- Layout measures ---- */
-  --measure-text: 68ch;     /* ideal reading column */
-  --measure-narrow: 44ch;   /* captions / sidebars */
+  --measure-text: 68ch; /* ideal reading column */
+  --measure-narrow: 44ch; /* captions / sidebars */
   --gutter: var(--space-6);
   --page-max: 1280px;
   --sidebar-w: 264px;
@@ -178,18 +178,18 @@
 
 :root {
   /* ---- Corner radius ---- */
-  --radius-xs:   3px;
-  --radius-sm:   5px;
-  --radius-md:   8px;
-  --radius-lg:   12px;
-  --radius-xl:   18px;
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
   --radius-pill: 999px;
 
   /* ---- Shadows (warm ink, low + soft) ---- */
   --shadow-xs: 0 1px 1px rgba(23, 21, 15, 0.05);
   --shadow-sm: 0 1px 2px rgba(23, 21, 15, 0.06), 0 1px 1px rgba(23, 21, 15, 0.04);
   --shadow-md: 0 3px 10px rgba(23, 21, 15, 0.07), 0 1px 2px rgba(23, 21, 15, 0.05);
-  --shadow-lg: 0 12px 32px rgba(23, 21, 15, 0.10), 0 2px 6px rgba(23, 21, 15, 0.05);
+  --shadow-lg: 0 12px 32px rgba(23, 21, 15, 0.1), 0 2px 6px rgba(23, 21, 15, 0.05);
   --shadow-focus: 0 0 0 3px var(--focus-ring);
 
   /* A "lifted paper" treatment: hairline + soft shadow */
@@ -197,10 +197,10 @@
   --elevation-popover: var(--shadow-lg);
 
   /* ---- Motion ---- */
-  --ease-standard: cubic-bezier(0.4, 0.0, 0.2, 1); /* @kind other */
-  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);   /* @kind other */
-  --ease-in:       cubic-bezier(0.4, 0.0, 1, 1);    /* @kind other */
-  --dur-fast:   120ms; /* @kind other */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* @kind other */
+  --dur-fast: 120ms; /* @kind other */
   --dur-normal: 200ms; /* @kind other */
-  --dur-slow:   320ms; /* @kind other */
+  --dur-slow: 320ms; /* @kind other */
 }

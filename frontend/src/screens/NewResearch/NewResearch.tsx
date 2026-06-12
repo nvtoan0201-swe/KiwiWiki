@@ -70,8 +70,16 @@ export function NewResearch() {
       });
       const scope: Record<string, unknown> = {};
       if (timeWindow) scope.time_window = timeWindow;
-      if (include) scope.included_subfields = include.split(",").map((s) => s.trim()).filter(Boolean);
-      if (exclude) scope.excluded_subfields = exclude.split(",").map((s) => s.trim()).filter(Boolean);
+      if (include)
+        scope.included_subfields = include
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      if (exclude)
+        scope.excluded_subfields = exclude
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
       if (depth) scope.depth = depth;
       if (seedSources.length) scope.seed_sources = seedSources;
       if (Object.keys(scope).length > 0) {
@@ -113,7 +121,12 @@ export function NewResearch() {
             onChange={(e) => setTimeWindow(e.target.value)}
             hint="Optional — what counts as recent."
           />
-          <Select label="Depth" value={depth} onChange={(e) => setDepth(e.target.value)} options={DEPTHS} />
+          <Select
+            label="Depth"
+            value={depth}
+            onChange={(e) => setDepth(e.target.value)}
+            options={DEPTHS}
+          />
           <Input
             label="Include subfields"
             placeholder="comma-separated"

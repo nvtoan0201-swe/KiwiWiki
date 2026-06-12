@@ -7,7 +7,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { useComparison, useSources } from "../../api/hooks";
 import { Badge, Button, Callout, Card, SourceChip } from "../../components/ds";
-import { useProvenanceTrace } from "../../components/ProvenancePopover";
+import { useProvenanceTrace } from "../../components/provenanceContext";
 import { ConfidenceBadge, EmptyState } from "../../components/shared";
 
 export function ComparativeAnalysis() {
@@ -47,9 +47,7 @@ export function ComparativeAnalysis() {
         n={i + 1}
         title={sourceTitle(id)}
         role="button"
-        onClick={() =>
-          openTrace({ projectId: projectId!, sourceId: id, claimText: statement })
-        }
+        onClick={() => openTrace({ projectId: projectId!, sourceId: id, claimText: statement })}
       />
     ));
 
@@ -79,7 +77,10 @@ export function ComparativeAnalysis() {
                 ))}
               </ul>
             )}
-            <Link to={`/projects/${projectId}/sources?cluster=${cluster.id}`} className="muted-note">
+            <Link
+              to={`/projects/${projectId}/sources?cluster=${cluster.id}`}
+              className="muted-note"
+            >
               Sources in this cluster
             </Link>
           </Card>

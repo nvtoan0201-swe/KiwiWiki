@@ -2,13 +2,17 @@
    KiwiWiki — Fonts + base element defaults (from the design system)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 
 *,
 *::before,
-*::after { box-sizing: border-box; }
+*::after {
+  box-sizing: border-box;
+}
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
@@ -17,12 +21,15 @@ body {
   line-height: var(--leading-normal);
   color: var(--text-primary);
   background: var(--surface-page);
-  font-feature-settings: 'kern', 'liga', 'calt';
+  font-feature-settings: "kern", "liga", "calt";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: var(--font-serif);
   color: var(--text-heading);
   font-weight: var(--weight-medium);
@@ -31,12 +38,27 @@ h1, h2, h3, h4 {
   margin: 0 0 0.5em;
   text-wrap: balance;
 }
-h1 { font-size: var(--text-h1); line-height: var(--leading-tight); }
-h2 { font-size: var(--text-h2); }
-h3 { font-size: var(--text-h3); }
-h4 { font-size: var(--text-h4); font-family: var(--font-sans); font-weight: var(--weight-semibold); letter-spacing: 0; }
+h1 {
+  font-size: var(--text-h1);
+  line-height: var(--leading-tight);
+}
+h2 {
+  font-size: var(--text-h2);
+}
+h3 {
+  font-size: var(--text-h3);
+}
+h4 {
+  font-size: var(--text-h4);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0;
+}
 
-p { margin: 0 0 1em; text-wrap: pretty; }
+p {
+  margin: 0 0 1em;
+  text-wrap: pretty;
+}
 
 a {
   color: var(--text-accent);
@@ -46,9 +68,13 @@ a {
   text-decoration-color: var(--border-accent);
   transition: text-decoration-color var(--dur-fast) var(--ease-standard);
 }
-a:hover { text-decoration-color: var(--accent); }
+a:hover {
+  text-decoration-color: var(--accent);
+}
 
-code, kbd, samp {
+code,
+kbd,
+samp {
   font-family: var(--font-mono);
   font-size: 0.92em;
 }
@@ -87,4 +113,6 @@ hr {
   color: var(--text-accent);
 }
 
-.measure { max-width: var(--measure-text); }
+.measure {
+  max-width: var(--measure-text);
+}

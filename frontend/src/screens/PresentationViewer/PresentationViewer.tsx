@@ -2,14 +2,14 @@
 // explicitly, per-slide headline + evidence + rendered visual spec, speaker
 // notes, reorder controls (client-side), and pptx/md export.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { api } from "../../api/client";
 import { usePresentation } from "../../api/hooks";
 import type { Slide, VisualSpec } from "../../api/types";
 import { Badge, Button, Card, Icon, IconButton, SourceChip } from "../../components/ds";
-import { useProvenanceTrace } from "../../components/ProvenancePopover";
+import { useProvenanceTrace } from "../../components/provenanceContext";
 import { EmptyState } from "../../components/shared";
 
 function Visual({ spec }: { spec: VisualSpec | null | undefined }) {
@@ -41,7 +41,8 @@ function Visual({ spec }: { spec: VisualSpec | null | undefined }) {
   }
   const points = spec.points ?? [];
   if (points.length === 0) return null;
-  const icon = spec.type === "timeline" ? "calendar-range" : spec.type === "trend" ? "trending-up" : "list";
+  const icon =
+    spec.type === "timeline" ? "calendar-range" : spec.type === "trend" ? "trending-up" : "list";
   return (
     <div className="slide-visual">
       {spec.title && (
@@ -64,16 +65,19 @@ export function PresentationViewer() {
   const { openTrace } = useProvenanceTrace();
 
   const deck = (presentations.data ?? [])[0];
+  const slides = (deck?.slides ?? []) as Slide[];
+
   const [order, setOrder] = useState<number[]>([]);
   const [active, setActive] = useState(0);
   const [showNotes, setShowNotes] = useState(true);
-
-  const slides = (deck?.slides ?? []) as Slide[];
-  useEffect(() => {
+  // Reset the (client-side) ordering when a new deck version loads — done
+  // during render rather than in an effect to avoid a cascading re-render.
+  const [deckKey, setDeckKey] = useState<string | null>(null);
+  if (deck && deck.id !== deckKey) {
+    setDeckKey(deck.id);
     setOrder(slides.map((_, i) => i));
     setActive(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deck?.id, slides.length]);
+  }
 
   if (presentations.isLoading) return <p className="muted-note screen">Loading presentation…</p>;
   if (!deck) {
@@ -98,9 +102,7 @@ export function PresentationViewer() {
     setActive((a) => (a === pos ? pos + dir : a));
   };
 
-  const keyMessages = (deck.key_messages ?? []).map((m) =>
-    typeof m === "string" ? m : m.message,
-  );
+  const keyMessages = (deck.key_messages ?? []).map((m) => (typeof m === "string" ? m : m.message));
   const activeSlide = slides[order[active] ?? 0];
 
   return (
@@ -156,7 +158,12 @@ export function PresentationViewer() {
                   <span className="deck-rail__headline">{s.headline}</span>
                 </button>
                 <span className="deck-rail__controls">
-                  <IconButton icon="chevron-up" label="Move up" size="sm" onClick={() => move(pos, -1)} />
+                  <IconButton
+                    icon="chevron-up"
+                    label="Move up"
+                    size="sm"
+                    onClick={() => move(pos, -1)}
+                  />
                   <IconButton
                     icon="chevron-down"
                     label="Move down"
@@ -172,11 +179,12 @@ export function PresentationViewer() {
         {activeSlide && (
           <div className="deck-stage">
             <Card pad className="slide" data-testid="active-slide">
-              {activeSlide.key_message_index != null && keyMessages[activeSlide.key_message_index] && (
-                <Badge tone="accent" icon="target">
-                  Key message {activeSlide.key_message_index + 1}
-                </Badge>
-              )}
+              {activeSlide.key_message_index != null &&
+                keyMessages[activeSlide.key_message_index] && (
+                  <Badge tone="accent" icon="target">
+                    Key message {activeSlide.key_message_index + 1}
+                  </Badge>
+                )}
               <h2 className="slide__headline">{activeSlide.headline}</h2>
               <ul className="slide__evidence">
                 {(activeSlide.evidence ?? []).map((e, i) => (

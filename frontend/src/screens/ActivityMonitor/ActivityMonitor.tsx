@@ -8,7 +8,8 @@ import { Link, useParams } from "react-router-dom";
 
 import { useEscalations, useProject, useRunControl, useRuns, useStartRun } from "../../api/hooks";
 import { Badge, Button, Callout, Card, Icon, Input } from "../../components/ds";
-import { BudgetMeter, EmptyState, StageTimeline, StatusPill, formatWhen } from "../../components/shared";
+import { formatWhen } from "../../components/helpers";
+import { BudgetMeter, EmptyState, StageTimeline, StatusPill } from "../../components/shared";
 import { useLiveRun } from "../../store/liveRun";
 
 function SaturationIndicator() {
@@ -43,7 +44,9 @@ function Feed() {
   }, [feed.length]);
 
   if (feed.length === 0) {
-    return <p className="muted-note">Waiting for activity… events appear here as the agent works.</p>;
+    return (
+      <p className="muted-note">Waiting for activity… events appear here as the agent works.</p>
+    );
   }
   return (
     <div className="monitor-feed" data-testid="activity-feed">
@@ -210,7 +213,12 @@ export function ActivityMonitor() {
                   </div>
                 </div>
               ) : (
-                <Button variant="ghost" size="sm" iconLeft="sliders-horizontal" onClick={() => setBudgetEdit(true)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconLeft="sliders-horizontal"
+                  onClick={() => setBudgetEdit(true)}
+                >
                   Adjust budget
                 </Button>
               ))}
@@ -235,7 +243,11 @@ export function ActivityMonitor() {
                       Pause
                     </Button>
                   ) : (
-                    <Button size="sm" iconLeft="play" onClick={() => control.resume.mutate(activeRun.id)}>
+                    <Button
+                      size="sm"
+                      iconLeft="play"
+                      onClick={() => control.resume.mutate(activeRun.id)}
+                    >
                       Resume
                     </Button>
                   )}
@@ -244,7 +256,10 @@ export function ActivityMonitor() {
                     size="sm"
                     iconLeft="square"
                     onClick={() =>
-                      control.stop.mutate({ runId: activeRun.id, reason: "Stopped from the monitor" })
+                      control.stop.mutate({
+                        runId: activeRun.id,
+                        reason: "Stopped from the monitor",
+                      })
                     }
                   >
                     Stop

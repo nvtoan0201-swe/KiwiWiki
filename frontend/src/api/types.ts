@@ -40,18 +40,11 @@ export const STAGE_LABELS: Record<Stage, string> = {
   presentation_generation: "Presentation",
 };
 
-export type ConfidenceLabel =
-  | "well_established"
-  | "emerging"
-  | "contested"
-  | "speculative";
+export type ConfidenceLabel = "well_established" | "emerging" | "contested" | "speculative";
 
 export type TriageStatus = "deep_read" | "skimmed" | "set_aside" | "excluded";
 
-export type DiscoveryChannel =
-  | "keyword_search"
-  | "citation_snowball"
-  | "user_supplied";
+export type DiscoveryChannel = "keyword_search" | "citation_snowball" | "user_supplied";
 
 export type EscalationStatus = "open" | "resolved" | "auto_resolved";
 
@@ -96,12 +89,7 @@ export type BudgetCategory = "llm_tokens" | "search_calls" | "papers_read" | "ti
 
 export type GapImportance = "high" | "medium" | "low";
 
-export type ProvenanceContext =
-  | "analysis"
-  | "comparison"
-  | "gap"
-  | "report"
-  | "presentation";
+export type ProvenanceContext = "analysis" | "comparison" | "gap" | "report" | "presentation";
 
 // ---------- Common envelopes ----------
 

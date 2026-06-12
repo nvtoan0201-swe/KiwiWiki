@@ -9,8 +9,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEscalations, useProject, useResolveEscalation } from "../../api/hooks";
 import type { Escalation, EscalationTrigger } from "../../api/types";
 import { Badge, Button, Callout, Card, Radio, Textarea } from "../../components/ds";
-import { useProvenanceTrace } from "../../components/ProvenancePopover";
-import { EmptyState, formatWhen } from "../../components/shared";
+import { useProvenanceTrace } from "../../components/provenanceContext";
+import { formatWhen } from "../../components/helpers";
+import { EmptyState } from "../../components/shared";
 
 const TRIGGER_META: Record<EscalationTrigger, { label: string; why: string }> = {
   ambiguous_scope: {
@@ -129,7 +130,7 @@ function OpenEscalation({ escalation }: { escalation: Escalation }) {
       {isAmbiguityGroup ? (
         <div className="scope-ambiguities">
           {options.map((group) => {
-            const g = group as {
+            const g = group as unknown as {
               id: string;
               question: string;
               why_it_matters?: string;
@@ -160,10 +161,18 @@ function OpenEscalation({ escalation }: { escalation: Escalation }) {
       ) : (
         <div className="escalation-options">
           {options.map((opt, i) => {
-            const o = opt as { id?: string; label: string; description?: string; consequence?: string };
+            const o = opt as {
+              id?: string;
+              label: string;
+              description?: string;
+              consequence?: string;
+            };
             const id = o.id ?? String(i);
             return (
-              <label key={id} className={`escalation-option${selected === id ? " escalation-option--on" : ""}`}>
+              <label
+                key={id}
+                className={`escalation-option${selected === id ? " escalation-option--on" : ""}`}
+              >
                 <Radio
                   name="escalation-option"
                   checked={selected === id}
@@ -172,7 +181,9 @@ function OpenEscalation({ escalation }: { escalation: Escalation }) {
                 />
                 {o.description && <p className="escalation-option__desc">{o.description}</p>}
                 {o.consequence && (
-                  <p className="escalation-option__consequence">If you choose this: {o.consequence}</p>
+                  <p className="escalation-option__consequence">
+                    If you choose this: {o.consequence}
+                  </p>
                 )}
               </label>
             );
@@ -203,7 +214,11 @@ function OpenEscalation({ escalation }: { escalation: Escalation }) {
       />
 
       <div className="form-actions">
-        <Button onClick={submit} disabled={!canSubmit || resolve.isPending} data-testid="resolve-escalation">
+        <Button
+          onClick={submit}
+          disabled={!canSubmit || resolve.isPending}
+          data-testid="resolve-escalation"
+        >
           {resolve.isPending ? "Resuming…" : "Answer and resume the run"}
         </Button>
       </div>

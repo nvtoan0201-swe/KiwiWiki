@@ -10,7 +10,8 @@ import { useDeleteProject, useProjects } from "../../api/hooks";
 import type { Project, ProjectStatus } from "../../api/types";
 import { STAGE_LABELS } from "../../api/types";
 import { Badge, Button, Card, Icon, IconButton, Select } from "../../components/ds";
-import { EmptyState, StatusPill, formatWhen } from "../../components/shared";
+import { formatWhen } from "../../components/helpers";
+import { EmptyState, StatusPill } from "../../components/shared";
 import { useQueryClient } from "@tanstack/react-query";
 
 type SortKey = "updated" | "title" | "status";

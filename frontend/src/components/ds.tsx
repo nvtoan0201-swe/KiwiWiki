@@ -57,7 +57,13 @@ export function Button({
   className = "",
   ...rest
 }: ButtonProps) {
-  const cls = ["kw-btn", `kw-btn--${variant}`, `kw-btn--${size}`, block ? "kw-btn--block" : "", className]
+  const cls = [
+    "kw-btn",
+    `kw-btn--${variant}`,
+    `kw-btn--${size}`,
+    block ? "kw-btn--block" : "",
+    className,
+  ]
     .filter(Boolean)
     .join(" ");
   return (
@@ -111,7 +117,14 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   dot?: boolean;
 }
 
-export function Badge({ children, tone = "neutral", icon, dot = false, className = "", ...rest }: BadgeProps) {
+export function Badge({
+  children,
+  tone = "neutral",
+  icon,
+  dot = false,
+  className = "",
+  ...rest
+}: BadgeProps) {
   const cls = ["kw-badge", `kw-badge--${tone}`, className].filter(Boolean).join(" ");
   return (
     <span className={cls} {...rest}>
@@ -226,7 +239,9 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement>, Field
 export function Input({ label, hint, error, icon, id, className = "", ...rest }: InputProps) {
   const autoId = useId();
   const fieldId = id ?? autoId;
-  const inputCls = ["kw-input", error ? "kw-input--error" : "", className].filter(Boolean).join(" ");
+  const inputCls = ["kw-input", error ? "kw-input--error" : "", className]
+    .filter(Boolean)
+    .join(" ");
   const control = icon ? (
     <span className="kw-inputwrap">
       <span className="kw-inputwrap__icon">
@@ -246,7 +261,9 @@ export function Input({ label, hint, error, icon, id, className = "", ...rest }:
       )}
       {control}
       {(hint || error) && (
-        <span className={`kw-field__hint${error ? " kw-field__hint--error" : ""}`}>{error || hint}</span>
+        <span className={`kw-field__hint${error ? " kw-field__hint--error" : ""}`}>
+          {error || hint}
+        </span>
       )}
     </div>
   );
@@ -254,7 +271,15 @@ export function Input({ label, hint, error, icon, id, className = "", ...rest }:
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement>, FieldChrome {}
 
-export function Textarea({ label, hint, error, id, rows = 3, className = "", ...rest }: TextareaProps) {
+export function Textarea({
+  label,
+  hint,
+  error,
+  id,
+  rows = 3,
+  className = "",
+  ...rest
+}: TextareaProps) {
   const autoId = useId();
   const fieldId = id ?? autoId;
   const cls = ["kw-input", error ? "kw-input--error" : "", className].filter(Boolean).join(" ");
@@ -267,7 +292,9 @@ export function Textarea({ label, hint, error, id, rows = 3, className = "", ...
       )}
       <textarea id={fieldId} className={cls} rows={rows} {...rest} />
       {(hint || error) && (
-        <span className={`kw-field__hint${error ? " kw-field__hint--error" : ""}`}>{error || hint}</span>
+        <span className={`kw-field__hint${error ? " kw-field__hint--error" : ""}`}>
+          {error || hint}
+        </span>
       )}
     </div>
   );
@@ -284,7 +311,15 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement>, Fi
   options?: SelectOption[];
 }
 
-export function Select({ label, hint, options, id, className = "", children, ...rest }: SelectProps) {
+export function Select({
+  label,
+  hint,
+  options,
+  id,
+  className = "",
+  children,
+  ...rest
+}: SelectProps) {
   const autoId = useId();
   const fieldId = id ?? autoId;
   return (
@@ -295,7 +330,11 @@ export function Select({ label, hint, options, id, className = "", children, ...
         </label>
       )}
       <span className="kw-selectwrap">
-        <select id={fieldId} className={["kw-input", "kw-select", className].filter(Boolean).join(" ")} {...rest}>
+        <select
+          id={fieldId}
+          className={["kw-input", "kw-select", className].filter(Boolean).join(" ")}
+          {...rest}
+        >
           {options
             ? options.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -393,7 +432,13 @@ export function Citation({ index, title, source, meta, href, onClick }: Citation
       {index != null && <span className="kw-cite__idx">{index}</span>}
       <div className="kw-cite__body">
         {href ? (
-          <a className="kw-cite__title" href={href} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+          <a
+            className="kw-cite__title"
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            style={{ textDecoration: "none" }}
+          >
             {title}
           </a>
         ) : (
@@ -415,16 +460,26 @@ const CALLOUT_ICONS: Record<string, string> = {
   warning: "alert-triangle",
 };
 
-export interface CalloutProps {
+export interface CalloutProps extends HTMLAttributes<HTMLDivElement> {
   tone?: "note" | "insight" | "warning";
   title?: string;
   icon?: string;
   children: ReactNode;
 }
 
-export function Callout({ tone = "note", title, icon, children }: CalloutProps) {
+export function Callout({
+  tone = "note",
+  title,
+  icon,
+  children,
+  className = "",
+  ...rest
+}: CalloutProps) {
   return (
-    <div className={`kw-callout kw-callout--${tone}`}>
+    <div
+      className={["kw-callout", `kw-callout--${tone}`, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       <span className="kw-callout__icon">
         <Icon name={icon ?? CALLOUT_ICONS[tone]} size={18} />
       </span>

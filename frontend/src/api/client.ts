@@ -23,15 +23,19 @@ import type {
   SourceOverrideBody,
 } from "./types";
 
-export const API_BASE: string =
-  (import.meta.env?.VITE_API_BASE as string | undefined) ?? "/api";
+export const API_BASE: string = (import.meta.env?.VITE_API_BASE as string | undefined) ?? "/api";
 
 export class ApiError extends Error {
   code: string;
   status: number;
   details: Record<string, unknown>;
 
-  constructor(status: number, code: string, message: string, details: Record<string, unknown> = {}) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    details: Record<string, unknown> = {},
+  ) {
     super(message);
     this.status = status;
     this.code = code;

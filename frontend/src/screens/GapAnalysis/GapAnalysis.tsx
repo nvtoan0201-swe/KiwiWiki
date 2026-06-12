@@ -7,7 +7,7 @@ import { Link, useParams } from "react-router-dom";
 import { useGaps } from "../../api/hooks";
 import type { Gap } from "../../api/types";
 import { Badge, Callout, Card, SourceChip, type BadgeTone } from "../../components/ds";
-import { useProvenanceTrace } from "../../components/ProvenancePopover";
+import { useProvenanceTrace } from "../../components/provenanceContext";
 import { ConfidenceBadge, EmptyState } from "../../components/shared";
 
 const IMPORTANCE_TONE: Record<string, BadgeTone> = {

@@ -19,7 +19,8 @@ import {
   Select,
   type BadgeTone,
 } from "../../components/ds";
-import { EmptyState, authorsLine } from "../../components/shared";
+import { authorsLine } from "../../components/helpers";
+import { EmptyState } from "../../components/shared";
 
 const TRIAGE_META: Record<TriageStatus, { label: string; tone: BadgeTone }> = {
   deep_read: { label: "Deep read", tone: "accent" },
@@ -46,8 +47,18 @@ function AddSourceForm({ projectId, onDone }: { projectId: string; onDone: () =>
       <h4>Add a source manually</h4>
       <div className="form-grid">
         <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <Input label="DOI" value={doi} onChange={(e) => setDoi(e.target.value)} placeholder="optional" />
-        <Input label="URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="optional" />
+        <Input
+          label="DOI"
+          value={doi}
+          onChange={(e) => setDoi(e.target.value)}
+          placeholder="optional"
+        />
+        <Input
+          label="URL"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="optional"
+        />
       </div>
       <div className="form-actions">
         <Button
@@ -187,8 +198,8 @@ export function SourceLibrary() {
           <div className="eyebrow">Source library</div>
           <h1 className="screen-title">Sources</h1>
           <p className="screen-sub">
-            {all.length} found · {all.filter((s) => s.triage_status === "deep_read").length} deep-read ·{" "}
-            {all.filter((s) => s.triage_status === "excluded").length} excluded
+            {all.length} found · {all.filter((s) => s.triage_status === "deep_read").length}{" "}
+            deep-read · {all.filter((s) => s.triage_status === "excluded").length} excluded
           </p>
         </div>
         <Button variant="secondary" iconLeft="plus" onClick={() => setAdding(true)}>
@@ -204,10 +215,17 @@ export function SourceLibrary() {
         </Callout>
       )}
 
-      {adding && projectId && <AddSourceForm projectId={projectId} onDone={() => setAdding(false)} />}
+      {adding && projectId && (
+        <AddSourceForm projectId={projectId} onDone={() => setAdding(false)} />
+      )}
 
       <div className="dash-filters">
-        <Input icon="search" placeholder="Search title, venue, abstract…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input
+          icon="search"
+          placeholder="Search title, venue, abstract…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
         <Select
           aria-label="Filter by triage"
           value={triage}

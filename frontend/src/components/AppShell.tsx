@@ -26,7 +26,11 @@ function RailLink({
   end?: boolean;
 }) {
   return (
-    <NavLink to={to} end={end} className={({ isActive }) => `kw-nav${isActive ? " kw-nav--active" : ""}`}>
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) => `kw-nav${isActive ? " kw-nav--active" : ""}`}
+    >
       <Icon name={icon} size={17} />
       <span className="kw-nav__label">{label}</span>
       {count != null && count > 0 && <span className="kw-nav__count">{count}</span>}
@@ -42,7 +46,12 @@ function ProjectNav({ projectId }: { projectId: string }) {
     <nav className="chat-section" aria-label="Project">
       <div className="chat-section__label">This project</div>
       <RailLink to={`${base}/monitor`} icon="activity" label="Activity monitor" />
-      <RailLink to={`${base}/escalations`} icon="message-circle-question" label="Questions" count={openCount} />
+      <RailLink
+        to={`${base}/escalations`}
+        icon="message-circle-question"
+        label="Questions"
+        count={openCount}
+      />
       <RailLink to={`${base}/sources`} icon="file-text" label="Source library" />
       <RailLink to={`${base}/fieldmap`} icon="layers" label="Field map" />
       <RailLink to={`${base}/gaps`} icon="puzzle" label="Gap analysis" />
@@ -107,7 +116,9 @@ export function AppShell() {
   const { projectId } = useParams<{ projectId: string }>();
   const projects = useProjects();
   const unread = useNotifications((s) => s.items.filter((n) => !n.read).length);
-  const awaitingCount = (projects.data?.items ?? []).filter((p) => p.status === "awaiting_input").length;
+  const awaitingCount = (projects.data?.items ?? []).filter(
+    (p) => p.status === "awaiting_input",
+  ).length;
 
   // Keep one socket alive for the project being viewed.
   useProjectSocket(projectId);
@@ -144,8 +155,16 @@ export function AppShell() {
 
         <div className="shell-rail__foot">
           {projectId && connection !== "closed" && (
-            <Badge tone={connection === "open" ? "accent" : "warning"} dot data-testid="connection-state">
-              {connection === "open" ? "Live" : connection === "polling" ? "Reconnecting — polling" : "Connecting"}
+            <Badge
+              tone={connection === "open" ? "accent" : "warning"}
+              dot
+              data-testid="connection-state"
+            >
+              {connection === "open"
+                ? "Live"
+                : connection === "polling"
+                  ? "Reconnecting — polling"
+                  : "Connecting"}
             </Badge>
           )}
         </div>

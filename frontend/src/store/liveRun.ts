@@ -134,9 +134,7 @@ export const useLiveRun = create<LiveRunState>((set, get) => ({
         next.saturation = {
           state: String(event.payload.state ?? "still finding new ideas"),
           novelty_share:
-            typeof event.payload.novelty_share === "number"
-              ? event.payload.novelty_share
-              : null,
+            typeof event.payload.novelty_share === "number" ? event.payload.novelty_share : null,
           iteration: event.payload.iteration as number | undefined,
         };
         break;

@@ -3,36 +3,14 @@
 // chain, confidence + credibility, an inference flag when applicable, and a
 // link to the full analysis / the original. Built as an overlay, not a route.
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { useProvenance, useSources } from "../api/hooks";
-import type { ConfidenceLabel, Provenance } from "../api/types";
 import { Badge, Callout, Citation, ConfidenceMeter, Icon, IconButton, SourceChip } from "./ds";
-import { ConfidenceBadge, authorsLine } from "./shared";
-
-export interface TraceRequest {
-  projectId: string;
-  /** Output entity id (gap id, report id, analysis id, …) — looked up server-side. */
-  refId?: string;
-  /** Trace everything tied to one source instead. */
-  sourceId?: string;
-  /** Already-resolved provenance rows (skips the fetch). */
-  rows?: Provenance[];
-  /** The claim text being traced, for the header. */
-  claimText?: string;
-  confidenceLabel?: ConfidenceLabel | null;
-}
-
-interface ProvenanceContextValue {
-  openTrace: (req: TraceRequest) => void;
-}
-
-const Ctx = createContext<ProvenanceContextValue>({ openTrace: () => {} });
-
-export function useProvenanceTrace(): ProvenanceContextValue {
-  return useContext(Ctx);
-}
+import { authorsLine } from "./helpers";
+import { ProvenanceCtx, type TraceRequest } from "./provenanceContext";
+import { ConfidenceBadge } from "./shared";
 
 function TracePanel({ req, onClose }: { req: TraceRequest; onClose: () => void }) {
   const needFetch = !req.rows;
@@ -41,15 +19,26 @@ function TracePanel({ req, onClose }: { req: TraceRequest; onClose: () => void }
   const sources = useSources(req.projectId);
 
   const rows = req.rows ?? fetched.data ?? [];
+  const sourceItems = sources.data?.items;
   const sourceById = useMemo(() => {
-    const map = new Map<string, NonNullable<typeof sources.data>["items"][number]>();
-    for (const s of sources.data?.items ?? []) map.set(s.id, s);
+    const map = new Map<string, NonNullable<typeof sourceItems>[number]>();
+    for (const s of sourceItems ?? []) map.set(s.id, s);
     return map;
-  }, [sources.data]);
+  }, [sourceItems]);
 
   return (
-    <div className="prov-overlay" role="dialog" aria-modal="true" aria-label="Provenance trace" onClick={onClose}>
-      <div className="prov-panel" data-testid="provenance-popover" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="prov-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Provenance trace"
+      onClick={onClose}
+    >
+      <div
+        className="prov-panel"
+        data-testid="provenance-popover"
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="prov-panel__head">
           <div>
             <div className="eyebrow">Provenance</div>
@@ -92,7 +81,9 @@ function TracePanel({ req, onClose }: { req: TraceRequest; onClose: () => void }
                   <span className="prov-entry__ctx">{p.context}</span>
                 </div>
 
-                {p.claim_text !== req.claimText && <p className="prov-entry__claim">{p.claim_text}</p>}
+                {p.claim_text !== req.claimText && (
+                  <p className="prov-entry__claim">{p.claim_text}</p>
+                )}
 
                 {p.is_inference ? (
                   <Callout tone="insight" title="This is the agent's own synthesis">
@@ -123,7 +114,10 @@ function TracePanel({ req, onClose }: { req: TraceRequest; onClose: () => void }
                               {Math.round(source.credibility_score * 100)}%
                             </span>
                           )}
-                          <Link to={`/projects/${p.project_id}/sources/${source.id}`} onClick={onClose}>
+                          <Link
+                            to={`/projects/${p.project_id}/sources/${source.id}`}
+                            onClick={onClose}
+                          >
                             Full analysis
                           </Link>
                           {source.url && (
@@ -155,9 +149,9 @@ export function ProvenanceProvider({ children }: { children: ReactNode }) {
   const openTrace = useCallback((r: TraceRequest) => setReq(r), []);
   const value = useMemo(() => ({ openTrace }), [openTrace]);
   return (
-    <Ctx.Provider value={value}>
+    <ProvenanceCtx.Provider value={value}>
       {children}
       {req && <TracePanel req={req} onClose={() => setReq(null)} />}
-    </Ctx.Provider>
+    </ProvenanceCtx.Provider>
   );
 }

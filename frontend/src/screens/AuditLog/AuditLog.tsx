@@ -67,7 +67,12 @@ export function AuditLog() {
               Resume paused run
             </Button>
           )}
-          <Button variant="secondary" size="sm" iconLeft="rotate-ccw" onClick={() => startRun.mutate()}>
+          <Button
+            variant="secondary"
+            size="sm"
+            iconLeft="rotate-ccw"
+            onClick={() => startRun.mutate()}
+          >
             Re-run from here
           </Button>
           <Button variant="ghost" size="sm" iconLeft="download" onClick={exportLog}>
@@ -103,7 +108,9 @@ export function AuditLog() {
                     <Badge tone={meta?.tone ?? "neutral"} icon={meta?.icon}>
                       {entry.action_type.replace(/_/g, " ")}
                     </Badge>
-                    {entry.stage && <span className="audit-entry__stage">{STAGE_LABELS[entry.stage]}</span>}
+                    {entry.stage && (
+                      <span className="audit-entry__stage">{STAGE_LABELS[entry.stage]}</span>
+                    )}
                   </div>
                   <p className="audit-entry__desc">{entry.description}</p>
                   {entry.reasoning && (

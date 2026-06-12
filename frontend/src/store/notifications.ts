@@ -71,11 +71,9 @@ export const useNotifications = create<NotificationState>((set) => ({
       items: state.items.map((n) => (n.id === id ? { ...n, read: true } : n)),
     })),
 
-  markAllRead: () =>
-    set((state) => ({ items: state.items.map((n) => ({ ...n, read: true })) })),
+  markAllRead: () => set((state) => ({ items: state.items.map((n) => ({ ...n, read: true })) })),
 
-  dismissToast: (id) =>
-    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+  dismissToast: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 
   clear: () => set({ items: [], toasts: [] }),
 }));

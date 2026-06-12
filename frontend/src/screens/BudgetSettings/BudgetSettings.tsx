@@ -101,7 +101,11 @@ export function BudgetSettings() {
         <div className="form-row">
           <span className="kw-field__label">Outputs</span>
           <div className="form-row__options">
-            <Checkbox label="Report" checked={s.defaultOutputs.includes("report")} onChange={() => toggleOutput("report")} />
+            <Checkbox
+              label="Report"
+              checked={s.defaultOutputs.includes("report")}
+              onChange={() => toggleOutput("report")}
+            />
             <Checkbox
               label="Presentation"
               checked={s.defaultOutputs.includes("presentation")}
@@ -158,7 +162,11 @@ export function BudgetSettings() {
       <Card pad className="form-card">
         <h4>Notifications</h4>
         <div className="form-row__options form-row__options--col">
-          <Switch label="Run complete" checked={s.notifyRunComplete} onChange={(e) => s.update({ notifyRunComplete: e.target.checked })} />
+          <Switch
+            label="Run complete"
+            checked={s.notifyRunComplete}
+            onChange={(e) => s.update({ notifyRunComplete: e.target.checked })}
+          />
           <Switch
             label="Budget approaching its ceiling"
             checked={s.notifyBudgetApproaching}

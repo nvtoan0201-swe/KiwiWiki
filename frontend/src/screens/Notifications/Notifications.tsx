@@ -6,7 +6,8 @@ import { Link } from "react-router-dom";
 
 import { useProjects } from "../../api/hooks";
 import { Badge, Button, Card, Icon, type BadgeTone } from "../../components/ds";
-import { EmptyState, formatWhen } from "../../components/shared";
+import { formatWhen } from "../../components/helpers";
+import { EmptyState } from "../../components/shared";
 import { useNotifications, type NotificationKind } from "../../store/notifications";
 
 const KIND_META: Record<NotificationKind, { tone: BadgeTone; icon: string; label: string }> = {
@@ -94,7 +95,11 @@ export function Notifications() {
               </Link>
             )}
             {!n.read && (
-              <button className="notif__dismiss" aria-label="Mark read" onClick={() => markRead(n.id)}>
+              <button
+                className="notif__dismiss"
+                aria-label="Mark read"
+                onClick={() => markRead(n.id)}
+              >
                 <Icon name="check" size={14} />
               </button>
             )}

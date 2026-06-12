@@ -21,18 +21,6 @@ const TEXT_TO_LABEL: Record<string, ConfidenceLabel> = {
   speculative: "speculative",
 };
 
-export function citedSourceIds(markdown: string): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const match of markdown.matchAll(MARKER_RE)) {
-    if (!seen.has(match[1])) {
-      seen.add(match[1]);
-      out.push(match[1]);
-    }
-  }
-  return out;
-}
-
 export interface CitedMarkdownProps {
   markdown: string;
   /** source id → citation number (first-appearance order). */

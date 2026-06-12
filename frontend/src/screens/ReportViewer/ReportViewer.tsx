@@ -9,8 +9,9 @@ import { useParams } from "react-router-dom";
 import { usePatchReport, useProvenance, useReports, useRewriteReport } from "../../api/hooks";
 import { api } from "../../api/client";
 import { Badge, Button, Callout, Card, Select } from "../../components/ds";
-import { CitedMarkdown, citedSourceIds } from "../../components/CitedMarkdown";
-import { useProvenanceTrace } from "../../components/ProvenancePopover";
+import { CitedMarkdown } from "../../components/CitedMarkdown";
+import { citedSourceIds } from "../../components/helpers";
+import { useProvenanceTrace } from "../../components/provenanceContext";
 import { EmptyState } from "../../components/shared";
 
 export function ReportViewer() {
@@ -29,19 +30,14 @@ export function ReportViewer() {
   const list = reports.data ?? [];
   const report = version ? list.find((r) => r.id === version) : list[0];
 
-  const provenance = useProvenance(
-    projectId,
-    { ref_id: report?.id, context: "report" },
-    !!report,
-  );
+  const provenance = useProvenance(projectId, { ref_id: report?.id, context: "report" }, !!report);
 
+  const markdown = report?.content_markdown ?? "";
   const numbering = useMemo(() => {
     const map = new Map<string, number>();
-    if (report?.content_markdown) {
-      citedSourceIds(report.content_markdown).forEach((id, i) => map.set(id, i + 1));
-    }
+    citedSourceIds(markdown).forEach((id, i) => map.set(id, i + 1));
     return map;
-  }, [report?.content_markdown]);
+  }, [markdown]);
 
   if (reports.isLoading) return <p className="muted-note screen">Loading report…</p>;
 
@@ -67,7 +63,11 @@ export function ReportViewer() {
   };
 
   const selfCheck = report.self_check_result;
-  const findings = (selfCheck?.findings ?? []) as { issue?: string; action?: string; note?: string }[];
+  const findings = (selfCheck?.findings ?? []) as {
+    issue?: string;
+    action?: string;
+    note?: string;
+  }[];
 
   const saveEdit = async () => {
     await patchReport.mutateAsync({ reportId: report.id, content: draft });

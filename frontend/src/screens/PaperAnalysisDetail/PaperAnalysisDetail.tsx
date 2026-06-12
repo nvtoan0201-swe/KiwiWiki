@@ -9,8 +9,9 @@ import { Link, useParams } from "react-router-dom";
 import { useAnalysis, useSourceOverride } from "../../api/hooks";
 import type { CredibilityComponent } from "../../api/types";
 import { Badge, Button, Callout, Card, ConfidenceMeter, Icon } from "../../components/ds";
-import { useProvenanceTrace } from "../../components/ProvenancePopover";
-import { ConfidenceBadge, EmptyState, authorsLine } from "../../components/shared";
+import { useProvenanceTrace } from "../../components/provenanceContext";
+import { authorsLine } from "../../components/helpers";
+import { ConfidenceBadge, EmptyState } from "../../components/shared";
 
 const CRED_LABELS: Record<string, string> = {
   venue_quality: "Venue quality",
@@ -124,7 +125,11 @@ export function PaperAnalysisDetail() {
             <p className="screen-body" data-testid="core-claim">
               {analysis.core_claim ?? "—"}{" "}
               {analysis.core_claim && (
-                <PassageLink projectId={projectId!} sourceId={source.id} claim={analysis.core_claim} />
+                <PassageLink
+                  projectId={projectId!}
+                  sourceId={source.id}
+                  claim={analysis.core_claim}
+                />
               )}
             </p>
             <h4>Method</h4>
@@ -169,7 +174,11 @@ export function PaperAnalysisDetail() {
           )}
 
           {analysis.agent_critique && (
-            <Callout tone="insight" title="Agent critique — inference, not sourced" data-testid="agent-critique">
+            <Callout
+              tone="insight"
+              title="Agent critique — inference, not sourced"
+              data-testid="agent-critique"
+            >
               <Badge tone="neutral" icon="sparkles" data-testid="critique-inference-flag">
                 Agent inference
               </Badge>
@@ -217,7 +226,9 @@ export function PaperAnalysisDetail() {
             return (
               <Callout key={c.id} tone="warning" title="Disagrees with another paper">
                 <p className="screen-body">{c.description}</p>
-                <Link to={`/projects/${projectId}/sources/${otherId}`}>Open the conflicting paper</Link>
+                <Link to={`/projects/${projectId}/sources/${otherId}`}>
+                  Open the conflicting paper
+                </Link>
                 {c.resolved && c.resolution && (
                   <p className="muted-note">Resolved in comparison: {c.resolution}</p>
                 )}
